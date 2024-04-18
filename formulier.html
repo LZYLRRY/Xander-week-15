@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulier</title>
+    <style>
+        body
+        {
+            font-family: arial;
+        }
+
+        h1
+        {
+            margin-left: 170px;
+        }
+
+        label
+        {
+            display: inline-block;
+            width: 150px;
+            margin: 10px;
+            text-align: right;
+        }
+
+        #knoppen
+        {
+            margin-left: 170px;
+            margin-top: 20px;
+        }
+
+        button
+        {
+            margin-right: 10px;
+        }
+
+        input:invalid
+        {
+            border-color: red;
+            background-color: pink;
+        }
+
+    </style>
+
+    <!-- Dit is een verwijzing naar de online jquery library -->
+    <!-- Deze regel MOET boven je eigen script staan anders kun je geen jQuery functionaliteit gebruiken -->
+    <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+
+    <link href="https://code.jquery.com/ui/1.13.2/themes/pepper-grinder/jquery-ui.css" rel="stylesheet" />
+
+        <script>
+        function saveData()
+        {
+            $('#opslaanKnop').fadeOut(3000).fadeIn(2000);
+
+            // Validatie
+            //var invalids = document.querySelectorAll('input:invalid');
+            var invalids = $('input:invalid');
+
+            if (invalids.length > 0)
+            {
+                alert('Er is iets mis!');
+                invalids[0].focus();
+                return;
+            }
+
+            // Maak een object in de JSON notatie en sla alle ingevoerde gegevens op
+            var myData = {
+                voornaam: document.getElementById('voornaam').value,
+                achternaam: document.getElementById('achternaam').value,
+                geboortedatum: document.getElementById('geboortedatum').value,
+                land: document.getElementById('land').value,
+                haarkleur: document.getElementById('haarkleur').value,
+                postcode: document.getElementById('postcode').value,
+            };
+
+            // Sla het object op in localStorage. Vergeet niet het JSON formaat af te dwingen met de stringify functie!
+            localStorage.MyData = JSON.stringify(myData);
+        }
+
+        function wisFormulier()
+        {
+            // land is geen input maar een select-veld
+            document.getElementById('land').value = '';
+
+            // de rest van de velden zijn input-velden dus kan met een for-lus
+            // var inputs = document.getElementsByTagName('input');
+
+            // for (var input of inputs)
+            // {
+            //     input.value = '';
+            // }
+
+            // In jQuery is dit de kortste oplossing:
+            // jQuery en de .val() functie gaan automatisch in een for-loop langs alle elementen
+            $('input').val('');
+        }
+
+        function loadData()
+        {
+            var myData = JSON.parse(localStorage.MyData);
+
+            document.getElementById('voornaam').value = myData.voornaam;
+            document.getElementById('achternaam').value = myData.achternaam;
+            document.getElementById('geboortedatum').value = myData.geboortedatum;
+            document.getElementById('land').value = myData.land;
+            document.getElementById('haarkleur').value = myData.haarkleur;
+            document.getElementById('postcode').value = myData.postcode;
+        }
+
+        function init()
+        {
+            // Transformeer het geboortedatum veld naar een datepicker
+            $('#geboortedatum').datepicker({
+                changeYear: true,
+                changeMonth: true,
+                dateFormat: 'dd-mm-yy'
+            });
+
+            // Het JSON object dat aan datepicker(...) wordt meegegeven zijn de opties van de datepicker
+            // Zie https://api.jqueryui.com/datepicker/
+
+            // jQuery heeft een standaard functie om data te downloaden van een url
+            // De functie landenToevoegen gaat de data verwerken (= toevoegen aan de select list)
+            $.getJSON('https://restcountries.com/v3.1/all/', landenToevoegen);
+        }
+
+        function landenToevoegen(data)
+        {
+            // Todo: de landen sorteren op naam
+            // Lastig, maar mogelijk
+
+            for (var land of data)
+            {
+                var option = document.createElement('option');
+                option.innerHTML = land.name.common;
+                document.getElementById('land').append(option);
+            }
+        }
+    </script>
+</head>
+<body onload="init();">
+
+    <h1>Mijn gegevens</h1>
+
+    <label>Voornaam</label>
+    <input type="text" id="voornaam" required />
+
+    <br />
+
+    <label>Achternaam</label>
+    <input type="text" id="achternaam" required />
+
+    <br />
+
+    <label>Geboortedatum</label>
+    <input type="text" id="geboortedatum" placeholder="dd-mm-jjjj" />
+
+    <br />
+
+    <label>Land</label>
+    <select id="land" size="1">
+    </select>
+
+    <br />
+
+    <label>Haarkleur</label>
+    <input type="color" id="haarkleur" />
+
+    <br />
+    
+    <label>Postcode</label>
+    <!-- Bij pattern kun je een reguliere expressie opgeven -->
+    <input type="text" id="postcode" pattern="[0-9]{4} ?[A-z]{2}" maxlength="7" placeholder="1234AA" />
+
+    <div id="knoppen">
+        <button id="opslaanKnop" onclick="saveData();">opslaan</button>
+        <button onclick="wisFormulier();">wissen</button>
+        <button onclick="loadData();">laden</button>
+    </div>
+
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+
+    <h1>En nog meer voorbeelden</h1>
+
+    <label>Geslacht</label>
+    <input type="radio" name="gender" />Man
+    <input type="radio" name="gender" />Vrouw
+    <input type="radio" name="gender" />X
+
+    <br />
+
+    <label>Nieuwsbrief?</label>
+    <input type="radio" name="nieuwsbrief" />Ja
+    <input type="radio" name="nieuwsbrief" />Nee
+
+    <br />
+
+    <label>Wachtwoord</label>
+    <input type="password" />
+    
+    <br />
+
+    <label>Score (1 tot 5)</label>
+    <input type="range" min="1" max="5" />
+
+    <br />
+    <label>Upload pasfoto</label>
+    <input type="file" />
+    
+</body>
+</html>

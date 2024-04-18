@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""/>
+
+     <!-- Make sure you put this AFTER Leaflet's CSS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+
+    <style>
+        #map 
+        { 
+            height: 600px; 
+            width: 70%;
+        }
+    </style>
+
+    <link href="site.css" rel="stylesheet">
+
+    <script>
+
+        // Deze variabele map heeft globale scope
+        var map;
+
+        function initMap()
+        {
+            // De variabele map heeft een scope: de zichtbaarheid van een variabele
+            map = L.map('map').setView([52, 5], 7);
+
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(map);
+
+            L.marker([52, 5]).addTo(map).bindPopup('Rotonde vlak bij Utrecht');
+
+            L.circle([51.571915, 4.768323], { radius: 5000, color: 'yellow' }).addTo(map);
+
+            // callback function: stationsToevoegen gaat de data verwerken
+            $.getJSON('https://xanderwemmers.nl/api/ns', stationsToevoegen);
+
+            //map.on('click', mapClicked);
+        }
+
+        // De variabele e bevat alle informatie over deze event
+        function mapClicked(e)
+        {
+            console.log(e);
+
+            map.flyTo(e.latlng);
+
+            // Of haal bijvoorbeeld deze informatie op:
+            var lat = e.latlng.lat;
+            var long = e.latlng.lng;
+
+            var url = `https://api.sunrisesunset.io/json?lat=${lat}&lng=${long}`;
+
+            $.getJSON(url, showSunInfo);
+        }
+
+        function showSunInfo(data)
+        {
+            document.getElementById('sunrise').innerHTML = data.results.sunrise;
+            document.getElementById('sunset').innerHTML = data.results.sunset;
+            document.getElementById('timezone').innerHTML = data.results.timezone;
+        }
+
+        function stationsToevoegen(stations)
+        {
+            for(let st of stations)
+            {
+                var r = 500;
+
+                if (st.Type == 'MEGA_STATION')
+                    r = 1000;
+
+                if (st.Type == 'KNOOPPUNT_INTERCITY_STATION')
+                    r = 750;
+
+                L.circle([st.Lat, st.Long], { radius: r }).addTo(map).on('click', () => getTijden(st));
+            }
+        }
+
+        function getTijden(st)
+        {
+            var h2 = document.createElement('h2');
+            h2.innerHTML = st.Name;
+            document.getElementById('nsinfo').innerHTML = '';
+            document.getElementById('nsinfo').append(h2);
+
+            $.getJSON('https://xanderwemmers.nl/api/ns/' + st.Code, showTijden);
+        }
+
+        function showTijden(data)
+        {
+            let table = document.createElement('table');
+
+            let tr = document.createElement('tr');
+            table.append(tr);
+            addColumn('Eindbestemming', tr);
+            addColumn('Tijd', tr);
+            addColumn('Vertraging', tr);
+            addColumn('Soort', tr);
+            addColumn('Spoor', tr);
+            addColumn('Via', tr);
+            addColumn('Ritnummer', tr);
+
+            for (let tijd of data)
+            {
+                let tr = document.createElement('tr');
+                table.append(tr);
+                addColumn(tijd.EindBestemming, tr);
+                addColumn(tijd.VertrekTijd.substring(11,16), tr);
+                addColumn(tijd.VertrekVertragingTekst, tr);
+                addColumn(tijd.TreinSoort, tr);
+                addColumn(tijd.VertrekSpoor, tr);
+                addColumn(tijd.RouteTekst, tr);
+                addColumn(tijd.RitNummer, tr);
+            }
+
+            document.getElementById('nsinfo').append(table);
+        }
+
+        function addColumn(text, tr)
+        {
+            var td = document.createElement('td');
+
+            if (text != undefined)
+                td.innerHTML = text;
+
+            tr.append(td);
+        }
+
+
+        function flyToLondon()
+        {
+            map.flyTo([51.5, 0], 10);
+        }
+
+        function flyToBerlin()
+        {
+            map.flyTo([52.529363,13.3], 10);
+
+            // setView gaat ook naar Berlijn maar dan zonder animatie
+
+            //map.setView([52.529363,13.3], 10);
+        }
+
+        function flyHome()
+        {
+            navigator.geolocation.getCurrentPosition(showPostion);
+        }
+
+        function showPostion(position)
+        {
+            console.log(position);
+
+            var home = [position.coords.latitude, position.coords.longitude]; 
+
+            map.flyTo(home, 15);
+            L.marker(home).addTo(map).bindPopup('Home sweet Home');
+
+            L.circle(home, { radius: position.coords.accuracy }).addTo(map);
+        }
+
+    </script>
+
+</head>
+
+<body onload="initMap();">
+
+    <h1>Landkaart</h1>
+
+    <div id="map"></div>
+
+    <br />
+    <br />
+
+    <button onclick="flyToLondon();">Fly to Londen</button>
+    <button onclick="flyToBerlin();">Fly to Berlijn</button>
+    <button onclick="flyHome();">Fly Home</button>
+
+    <br />
+    <br />
+
+    <div id="nsinfo"></div>
+
+    <h4>Sunrise</h4>
+    <p id="sunrise"></p>
+
+    <h4>Sunset</h4>
+    <p id="sunset"></p>
+
+    <h4>Timezone</h4>
+    <p id="timezone"></p>
+
+
+</body>
+</html>

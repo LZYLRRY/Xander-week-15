@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <style>
+        canvas {
+            background-color: green;
+        }
+    </style>
+
+    <script>
+
+        var bal1 = {
+            x: 60,
+            y: 50,
+            kleur: 'white',
+            speedX: -1,
+            speedY: 0.5
+        };
+
+        var bal2 = {
+            x: 200,
+            y: 100,
+            kleur: 'yellow',
+            speedX: -0.8,
+            speedY: 0.4
+        };
+
+        var bal3 = {
+            x: 100,
+            y: 20,
+            kleur: 'red',
+            speedX: 0.8,
+            speedY: 0.7
+        };
+
+        var lijst = [bal1, bal2, bal3];
+
+        const radius = 10;
+
+        var paused = false;
+
+        function startstop()
+        {
+            paused = !paused;
+
+            var knoppen = document.getElementsByTagName('button');
+
+            for (var knop of knoppen)
+            {
+                knop.disabled = paused;
+            }
+
+            document.getElementById('pauseButton').disabled = false;
+
+            if (paused)
+                document.getElementById('pauseButton').innerHTML = "Start";
+            else
+                document.getElementById('pauseButton').innerHTML = "Stop";
+        }
+
+        function drawCanvas()
+        {
+            if (paused)
+                return;
+
+            var canvas = document.getElementById('mijnCanvas');
+            var ctx = canvas.getContext('2d');
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (var b of lijst)
+            {
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, radius, 0, 2 * Math.PI);
+                ctx.fillStyle = b.kleur;
+                ctx.stroke();
+                ctx.fill();
+
+                // De ballen bewegen
+                b.x += b.speedX;
+                b.y += b.speedY;
+
+                // De ballen vertragen enigszins
+                b.speedX *= 0.999;
+                b.speedY *= 0.999;
+
+                // Botst tegen de linkerkant 
+                if (b.x < radius)
+                    b.speedX = -b.speedX;
+
+                // Onderkant
+                if (b.y > canvas.height - radius)
+                    b.speedY = -b.speedY;
+
+                // Rechtkant
+                if (b.x > canvas.width - radius)
+                    b.speedX = -b.speedX;
+
+                // Bovenkant
+                if (b.y < radius)
+                    b.speedY = -b.speedY;
+
+                if (Math.abs(b.speedX) < 0.001 && Math.abs(b.speedY < 0.001))
+                {
+                    document.getElementById('kickButton').disabled = false;
+                }
+            }
+
+        }
+
+        // Spel pauzeren
+        // save/load data
+        // Vertraging
+        // Nieuwe bal (random x,y en kleur en speed)
+        // Afstoten
+
+        function saveData()
+        {
+            localStorage.GameData = JSON.stringify(lijst);
+
+            // Deze syntax mag ook:
+            //localStorage['GameData'] = JSON.stringify(lijst);
+        }
+
+        function loadData()
+        {
+            lijst = JSON.parse(localStorage.GameData);
+        }
+
+        function newBall()
+        {
+            var b = {
+                x: Math.random() * 280 + 10, // tussen 10 en 290
+                y: Math.random() * 130 + 10, // tussen 10 en 140
+                kleur: '#' + Math.random().toString(16).slice(-6),
+                speedX: Math.random() * 4 - 2, // tussen -2 en +2
+                speedY: Math.random() * 4 - 2
+            };
+
+            // Dit kan ook:
+            //b.kleur = willekeurigeKleur();
+
+            lijst.push(b);
+        }
+
+        // Met dank aan ChatGPT:
+        function willekeurigeKleur() {
+            var letters = '0123456789ABCDEF';
+            var kleur = '#';
+            for (var i = 0; i < 6; i++) {
+                kleur += letters[Math.floor(Math.random() * 16)];
+            }
+            return kleur;
+        }
+
+        function kickit()
+        {
+            document.getElementById('kickButton').disabled = true;
+
+            for(var b of lijst)
+            {
+                b.speedX = Math.random() * 4 - 2;
+                b.speedY = Math.random() * 4 - 2;
+            }
+        }
+
+    </script>
+
+</head>
+
+<body onload="setInterval(drawCanvas, 10)">
+
+    <h1>Biljarttafel</h1>
+
+    <canvas id="mijnCanvas" width="400" height="200"></canvas>
+
+    <br />
+    <br />
+
+    <button onclick="saveData();">Save</button>
+
+    <button onclick="loadData();">Load</button>
+
+    <button onclick="newBall()">Nieuwe bal</button>
+
+    <button id="kickButton" disabled onclick="kickit();">Afstoten</button>
+
+    <button id="pauseButton" onclick="startstop();">Stop</button>
+</body>
+
+</html>

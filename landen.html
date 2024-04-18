@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+
+    <link href="site.css" rel="stylesheet">
+
+    <script>
+        // TODO
+
+        // Kopregel *
+        // Vlag *
+        // Filteren op links/rechts rijden *
+        // Filteren op naam *
+        // Sorteren op population en naam *
+
+        var countriesData = null;
+        var sortAsc = true;
+
+        function getData()
+        {
+            $.getJSON('https://restcountries.com/v3.1/all/', showData);
+        }
+
+        function showData(countries)
+        {
+            // Sla de data op in de globale variabele
+            if (countriesData == null)
+                countriesData = countries;
+
+            document.getElementById('aantal').innerHTML = `Er zijn ${countries.length} landen`;
+
+            document.getElementById('results').innerHTML = '';
+
+            var table = document.createElement('table');
+
+            // maak een kopregel
+            var tr = document.createElement('tr');
+            addColumn('Landnaam', tr, sortByName);
+            addColumn('Inwoneraantal', tr, sortByPopulation);
+            addColumn('Regio', tr);
+            addColumn('Subregio', tr);
+            addColumn('Oppervlakte', tr, sortByArea);
+            addColumn('Hoofdstad', tr);
+            addColumn('Vlag', tr);
+            table.append(tr);
+
+            for (var c of countries)
+            {
+                var tr = document.createElement('tr');
+
+                addColumn(c.name.common, tr);
+                addColumn(c.population, tr);
+                addColumn(c.region, tr);
+                addColumn(c.subregion, tr);
+                addColumn(c.area, tr);
+                addColumn(c.capital, tr);
+
+                // Dit laat de vlag URL zien als tekst
+                //addColumn(c.flags.svg, tr);
+
+                // Om de vlag te laten zien maken we een <img> element aan en zetten daarvan de juiste properties
+                var img = document.createElement('img');
+                img.src = c.flags.svg;
+                //img.height = 50;
+
+                if (c.flags.alt)
+                    img.title = c.flags.alt;
+
+                var td = document.createElement('td');
+                td.append(img);
+                tr.append(td);
+
+                table.append(tr);
+            }
+
+            document.getElementById('results').append(table);
+        }
+
+        // De derde parameter is een optionele parameter
+        function addColumn(text, tr, sorteerFunctie)
+        {
+            var td = document.createElement('td');
+
+            if (text != undefined)
+                td.innerHTML = text;
+
+            // Check of die derde parameter is meegegeven
+            if (sorteerFunctie != undefined)
+            {
+                // Je hoeft hier geen haakjes achter de functie te zetten
+                td.onclick = sorteerFunctie;
+                td.className = 'clickable';
+            }
+            
+            tr.append(td);
+        }
+
+        function filterCar(side)
+        {
+            var results = countriesData.filter(c => c.car.side == side);
+            showData(results);
+        }
+
+        function searchCountries()
+        {
+            var text = document.getElementById('searchBox').value;
+            var results = countriesData.filter(c => c.name.common.toLowerCase().includes(text.toLowerCase()));
+            showData(results);
+        }
+
+        function sortByPopulation()
+        {
+            if (sortAsc)
+                countriesData.sort((a, b) => a.population - b.population);
+            else
+                countriesData.sort((a, b) => b.population - a.population);
+
+            // Het ! maakt van true false. En daarma weer van false naar true
+            // Dus nu is het een echte toggle
+            sortAsc = !sortAsc;
+
+            // Dit kan ook, maar is meer werk
+
+            // if (sortAsc == true)
+            //     sortAsc = false;
+            // else
+            //     sortAsc = true;
+
+            showData(countriesData);
+        }
+
+        function sortByArea()
+        {
+            if (sortAsc)
+                countriesData.sort((a, b) => a.area - b.area);
+            else
+                countriesData.sort((a, b) => b.area - a.area);
+
+            sortAsc = !sortAsc;
+
+            showData(countriesData);
+        }
+
+        function sortByName()
+        {
+            if (sortAsc)
+                countriesData.sort((a, b) => a.name.common.localeCompare(b.name.common));
+            else
+                countriesData.sort((a, b) => b.name.common.localeCompare(a.name.common));
+
+            sortAsc = !sortAsc;
+
+            showData(countriesData);
+        }
+
+        function getEuroCountries()
+        {
+            // Filter aan de server kant door de URL aan te passen
+            $.getJSON('https://restcountries.com/v3.1/currency/eur', showData);
+        }
+
+    </script>
+    
+</head>
+<body onload="getData();">
+
+    <h1 id="aantal">Alle landen van de wereld</h1>
+
+    <button onclick="filterCar('left');">Links rijden</button>
+    <button onclick="filterCar('right');">Rechts rijden</button>
+    <button onclick="showData(countriesData);">Alle landen</button>
+
+    <input type="text" id="searchBox" onkeyup="searchCountries();" placeholder="Zoeken..." />
+
+    <button onclick="sortByPopulation();">Sorteer op Population</button>
+    <button onclick="sortByName();">Sorteer op Naam</button>
+    <button onclick="getEuroCountries()">Euro landen</button>
+
+    <br />
+    <br />
+
+    <div id="results">
+
+    </div>
+
+</body>
+</html>
